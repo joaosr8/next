@@ -2,7 +2,7 @@
 
 > **Prepare-se para sua próxima jornada.**
 
-O **NEXT+** é uma plataforma web de orientação para quem está terminando o ensino médio. Ela reúne em um só lugar o que a pessoa precisa para decidir o que vem depois: **teste vocacional**, **cursos gratuitos**, **canais para aprender**, **caminhos para a primeira vaga** e um **plano pessoal** com checklist.
+O **NEXT+** é uma plataforma web de orientação para quem está terminando o ensino médio. Ela reúne em um só lugar o que a pessoa precisa para decidir o que vem depois: **teste vocacional**, **cursos gratuitos**, **canais para aprender**, **notícias** de tecnologia, jogos, economia e saúde, **caminhos para a primeira vaga** e um **plano pessoal** com checklist.
 
 Projeto desenvolvido para a **INFOTEC 2026** pela turma do **3º Informática, Sala 01**, da **E.E.T.I. Professor Fontes** (Belo Horizonte, MG).
 
@@ -13,6 +13,7 @@ Projeto desenvolvido para a **INFOTEC 2026** pela turma do **3º Informática, S
 - [Como surgiu a ideia](#como-surgiu-a-ideia)
 - [Público-alvo](#público-alvo)
 - [Funcionalidades](#funcionalidades)
+- [Notícias](#notícias)
 - [Teste vocacional](#teste-vocacional)
 - [Tecnologias](#tecnologias)
 - [Estrutura do projeto](#estrutura-do-projeto)
@@ -36,7 +37,7 @@ Estudantes do ensino médio, principalmente os que estão no último ano e ainda
 
 ## Funcionalidades
 
-O site é uma página única (SPA) com sete seções, acessadas pelo menu:
+O site é uma página única (SPA) com oito seções, acessadas pelo menu:
 
 | Seção | O que oferece |
 |---|---|
@@ -44,6 +45,7 @@ O site é uma página única (SPA) com sete seções, acessadas pelo menu:
 | **Teste vocacional** | Questionário de 20 perguntas que gera um mapa de afinidades por área. |
 | **Cursos** | Temas de estudo (abrem em janela modal) e plataformas de cursos gratuitos. |
 | **Canais** | Curadoria de canais do YouTube, cada um com o vídeo de trailer reproduzido no próprio site. |
+| **Notícias** | Feed de matérias recentes de tecnologia, jogos, economia e saúde, que levam ao site oficial de cada veículo. |
 | **Vagas** | Caminhos para buscar a primeira oportunidade (LinkedIn, Google Vagas e InfoJobs). |
 | **Meu plano** | Checklist com barra de progresso, salvo no navegador. |
 | **Sobre nós** | A equipe, com perfil de cada integrante, e a história de como surgiu a ideia. |
@@ -80,6 +82,37 @@ Lista vertical: cada canal aparece com sua descrição e o vídeo de trailer log
 - Mais uma indicação da equipe.
 
 Os vídeos são incorporados com `youtube-nocookie.com` e carregam sob demanda (`loading="lazy"`).
+
+### Notícias
+
+Feed rolável no estilo da tela inicial do Chrome no celular: a pessoa vai descendo a página e encontra matérias recentes de veículos de notícias. Cada matéria é um cartão com **fonte**, **horário** ("há 2 h"), **título** e **miniatura**. Ao tocar no cartão, o site do veículo abre em uma nova aba, e a matéria completa é lida lá, no site oficial.
+
+**Assuntos e fontes**
+
+| Assunto | Fontes |
+|---|---|
+| Tecnologia | Tecnoblog e g1 Tecnologia |
+| Jogos | Tecnoblog (editoria de jogos) |
+| Economia | g1 Economia e Agência Brasil |
+| Saúde | Agência Brasil |
+
+**Como funciona**
+
+1. **Leitura dos feeds:** cada fonte publica um feed RSS com as matérias mais recentes. Como o navegador não consegue ler RSS diretamente, o site usa o serviço gratuito [rss2json](https://rss2json.com/), que converte o feed em JSON.
+2. **Montagem do feed:** o `script.js` busca todas as fontes ao mesmo tempo, junta as matérias, remove as repetidas (a mesma matéria pode aparecer em mais de um assunto) e ordena da mais nova para a mais antiga.
+3. **Imagem:** a miniatura vem da própria matéria. Quando não existe ou não carrega, aparece um ícone no lugar.
+4. **Rolagem infinita:** aparecem 10 matérias por vez, e mais 10 são mostradas conforme a pessoa desce (`IntersectionObserver`).
+5. **Filtros:** os botões **Tudo**, **Tecnologia**, **Jogos**, **Economia** e **Saúde** ficam fixos no topo e filtram o feed na hora.
+6. **Atualização:** o feed só é buscado quando a pessoa abre a aba. As notícias ficam salvas no navegador (`localStorage`) por **15 minutos**, para evitar pedidos repetidos, e se a pessoa voltar depois desse prazo o feed atualiza sozinho. O botão **Atualizar** busca de novo quando ela quiser.
+7. **Falhas:** se uma fonte não responder, as outras continuam aparecendo e o site avisa que "algumas fontes não responderam". Sem internet, ele mostra as últimas notícias salvas. Se não houver nada salvo, aparece uma mensagem com o botão "Tentar de novo".
+
+**Limitações**
+
+- As notícias são quase em tempo real, e não instantâneas, por causa da atualização a cada 15 minutos.
+- O site depende de serviços externos: os feeds dos veículos e o rss2json. O rss2json gratuito tem limite de uso e pode falhar em alguns momentos.
+- O feed precisa de internet. Se algum veículo mudar o endereço do feed, a fonte para de aparecer até o endereço ser atualizado em `NOTICIAS`.
+
+**Direitos e créditos:** o NEXT+ mostra apenas título, miniatura e fonte, e leva a pessoa ao site original para ler a matéria. O conteúdo pertence aos veículos, e o NEXT+ não o produz nem o edita.
 
 ### Vagas
 
@@ -123,9 +156,10 @@ Ao final, o site sugere próximos passos de pesquisa (ler grades curriculares, c
 
 - **HTML5**: estrutura semântica.
 - **CSS3**: variáveis CSS, Grid, Flexbox, tema claro/escuro e layout responsivo.
-- **JavaScript (puro, sem frameworks)**: navegação por hash, modais, teste vocacional, checklist e tema.
+- **JavaScript (puro, sem frameworks)**: navegação por hash, modais, teste vocacional, checklist, tema e feed de notícias (`fetch`, `Promise.allSettled` e `IntersectionObserver`).
+- **Feeds RSS + [rss2json](https://rss2json.com/)**: fonte das notícias.
 - **Google Fonts**: Sora (títulos) e Source Sans 3 (texto).
-- **`localStorage`**: guarda o plano, o resultado do teste e o tema escolhido.
+- **`localStorage`**: guarda o plano, o resultado do teste, o tema escolhido e as últimas notícias carregadas.
 
 **Previstas para o back-end:**
 
@@ -138,11 +172,11 @@ Ao final, o site sugere próximos passos de pesquisa (ler grades curriculares, c
 .
 ├── index.html   # estrutura das seções, menu e modal
 ├── style.css    # estilos, tema claro/escuro e responsividade
-├── script.js    # dados do site, navegação, modal, teste, plano e tema
+├── script.js    # dados do site, navegação, modal, teste, plano, tema e notícias
 └── README.md
 ```
 
-O `script.js` guarda os dados do site (cursos, canais, plano, equipe, áreas e perguntas do teste) em constantes no topo do arquivo, e o restante do código monta a página a partir delas.
+O `script.js` guarda os dados do site (cursos, canais, fontes de notícias, plano, equipe, áreas e perguntas do teste) em constantes no topo do arquivo, e o restante do código monta a página a partir delas.
 
 ## Como executar
 
@@ -157,7 +191,7 @@ O projeto é estático, então não há instalação nem dependências.
 
 Pelo **XAMPP**, copie a pasta do projeto para `htdocs`, inicie o Apache e acesse `http://localhost/nome-da-pasta/`.
 
-> Rode pelo servidor local se for usar os vídeos de trailer. Abrir o arquivo direto (`file://`) pode fazer o player do YouTube mostrar erro (como o 153) ou ficar em branco.
+> A aba **Notícias** precisa de conexão com a internet. Rode pelo servidor local se for usar os vídeos de trailer. Abrir o arquivo direto (`file://`) pode fazer o player do YouTube mostrar erro (como o 153) ou ficar em branco.
 
 ## Como editar o conteúdo
 
@@ -167,6 +201,8 @@ Quase tudo se altera no topo do `script.js`:
 |---|---|
 | Temas de cursos e seus links | `CURSOS` (campo `extra` para links específicos de um tema) e `PLATAFORMAS` |
 | Canais e trailers | `CANAIS` (campo `video` com o ID do vídeo do YouTube) |
+| Fontes e assuntos das notícias | `NOTICIAS` (cada assunto tem uma lista de fontes no formato `{ nome, feed }`, onde `feed` é o endereço RSS) |
+| Tempo de cache e quantidade de matérias por rolagem | `NOTICIAS_TTL` e `NOTICIAS_POR_VEZ` |
 | Itens do plano | `PLANO` |
 | Integrantes da equipe e links | `EQUIPE` (`github`, `linkedin`, `portfolio`, `rede`; o que ficar vazio não aparece) |
 | Áreas do teste | `AREAS` |
@@ -182,8 +218,9 @@ As plataformas de cursos e vagas exibidas como cards fixos ficam no `index.html`
 - Foco visível nos elementos interativos e uso de atributos ARIA (menu, modal e barra de progresso).
 - Modal que fecha com `Esc`, com clique fora ou no botão de fechar, e devolve o foco ao elemento anterior.
 - Respeito à preferência `prefers-reduced-motion` (sem animações).
+- No feed de notícias, o status da atualização é anunciado a leitores de tela e cada cartão avisa que abre o site original em nova aba.
 - Tema claro/escuro, que usa a preferência do sistema na primeira visita.
-- Layout responsivo, com menu em formato de botão no celular.
+- Layout responsivo, com menu em formato de botão em telas de até 1100 px.
 - Links externos abrem em nova aba com `rel="noopener noreferrer"`.
 
 ## Status e próximos passos
@@ -193,6 +230,7 @@ As plataformas de cursos e vagas exibidas como cards fixos ficam no `index.html`
 - Todas as seções do site, o teste vocacional e o plano salvo no navegador
 - Tema claro/escuro
 - Cursos, canais e vagas, com trailers de vídeo nos canais
+- Aba de notícias com feed rolável, filtros por assunto e links para os sites originais
 - Seção "Sobre nós", com equipe e história do projeto
 
 **Em desenvolvimento**
