@@ -27,7 +27,8 @@ const CANAIS = [
 ];
 
 /* Notícias: cada assunto tem as suas fontes. Para incluir uma, adicione { nome, feed } (endereço RSS) na lista.
-   Sites WordPress sem RSS bom podem usar também { wp } (API wp-json), que o navegador lê direto; o RSS vira plano B. */
+   Sites WordPress sem RSS bom podem usar também { wp } (API wp-json), que o navegador lê direto; o RSS vira plano B.
+   Qualquer fonte pode ter { logo: 'arquivo.png' }: imagem da pasta do projeto usada quando a matéria não tem foto. */
 const NOTICIAS = {
     tec: { nome: 'Tecnologia', fontes: [
         { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/feed' },
@@ -36,7 +37,7 @@ const NOTICIAS = {
     ] },
     jog: { nome: 'Jogos', fontes: [
         { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/tema/jogos/feed' },
-        { nome: 'Flow Games', wp: 'https://flowgames.gg/wp-json/wp/v2/posts?per_page=20&_embed=wp:featuredmedia&_fields=link,title,date_gmt,_links,_embedded', feed: 'https://flowgames.gg/feed/' }
+        { nome: 'Flow Games', wp: 'https://flowgames.gg/wp-json/wp/v2/posts?per_page=20&_embed=wp:featuredmedia&_fields=link,title,date_gmt,_links,_embedded', feed: 'https://flowgames.gg/feed/', logo: 'flowgames.png' }
     ] },
     eco: { nome: 'Economia', fontes: [
         { nome: 'g1 Economia', feed: 'https://g1.globo.com/rss/g1/economia/' },
@@ -277,6 +278,8 @@ renderPlano();
 let noticias = [], filtroNot = 'todas', mostradas = 0, ultimaCarga = 0;
 let noticiasIniciadas = false, carregandoNot = false, observador = null;
 const sentinela = $('#feed-fim');
+const LOGOS = {};
+Object.values(NOTICIAS).forEach(c => c.fontes.forEach(f => { if (f.logo) LOGOS[f.nome] = f.logo; }));
 const PIXEL = /ebc\.(png|gif)|pixel|track|1x1/i;
 
 const textoLimpo = h => (new DOMParser().parseFromString(h || '', 'text/html').documentElement.textContent || '').trim();
@@ -392,11 +395,13 @@ function mostrarNoticias(falhas = [], atualizou = true) {
 const filtradas = () => noticias.filter(n => filtroNot === 'todas' || n.cats.includes(filtroNot));
 function cartao(n) {
     const quando = n.data ? ' · ' + haQuanto(n.data) : '';
-    const img = n.img ? `<img src="${esc(n.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    const logo = LOGOS[n.fonte] || '';
+    const src = n.img || logo;
+    const img = src ? `<img src="${esc(src)}" data-logo="${esc(logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
     return `<a class="noticia" href="${esc(n.link)}" target="_blank" rel="noopener noreferrer">
         <div class="noticia-txt"><span class="noticia-meta">${esc(n.fonte)}${quando}</span>
             <h3>${esc(n.titulo)}</h3><span class="sr">(abre o site original em nova aba)</span></div>
-        <div class="noticia-img${n.img ? '' : ' sem-img'}" aria-hidden="true">${img}</div></a>`;
+        <div class="noticia-img${src ? '' : ' sem-img'}${!n.img && logo ? ' com-logo' : ''}" aria-hidden="true">${img}</div></a>`;
 }
 function renderFeed() {
     mostradas = 0;
@@ -433,7 +438,13 @@ function iniciarNoticias() {
     /* imagem que não carrega vira o ícone padrão (o evento error não "sobe", por isso usamos captura) */
     $('#feed').addEventListener('error', e => {
         if (e.target.tagName !== 'IMG') return;
-        e.target.parentElement.classList.add('sem-img');
+        const logo = e.target.dataset.logo;
+        if (logo && e.target.getAttribute('src') !== logo) {   /* foto da matéria falhou: usa a logo da fonte */
+            e.target.parentElement.classList.add('com-logo');
+            e.target.setAttribute('src', logo);
+            return;
+        }
+        e.target.parentElement.classList.add('sem-img');       /* nem a logo carregou: mostra o ícone */
         e.target.remove();
     }, true);
     if ('IntersectionObserver' in window)
