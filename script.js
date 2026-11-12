@@ -26,6 +26,27 @@ const CANAIS = [
     { nome: 'Canal recomendado pela equipe', desc: 'Mais uma indicação da nossa curadoria.', url: 'https://www.youtube.com/channel/UCafFexaRoRylOKdzGBU6Pgg', video: 'c6kJFWd8R30' }
 ];
 
+/* Notícias: cada assunto tem as suas fontes (feeds RSS). Para incluir uma fonte, basta adicionar { nome, feed } na lista */
+const NOTICIAS = {
+    tec: { nome: 'Tecnologia', fontes: [
+        { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/feed' },
+        { nome: 'g1 Tecnologia', feed: 'https://g1.globo.com/rss/g1/tecnologia/' }
+    ] },
+    jog: { nome: 'Jogos', fontes: [
+        { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/tema/jogos/feed' }
+    ] },
+    eco: { nome: 'Economia', fontes: [
+        { nome: 'g1 Economia', feed: 'https://g1.globo.com/rss/g1/economia/' },
+        { nome: 'Agência Brasil', feed: 'https://agenciabrasil.ebc.com.br/rss/economia/feed.xml' }
+    ] },
+    sau: { nome: 'Saúde', fontes: [
+        { nome: 'Agência Brasil', feed: 'https://agenciabrasil.ebc.com.br/rss/saude/feed.xml' }
+    ] }
+};
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url='; /* converte o RSS em JSON para o navegador conseguir ler */
+const NOTICIAS_TTL = 15 * 60 * 1000;  /* reaproveita as notícias salvas por 15 minutos */
+const NOTICIAS_POR_VEZ = 10;          /* quantas matérias aparecem a cada rolagem */
+
 const PLANO = [
     'Fazer o teste vocacional do NEXT+',
     'Pesquisar 3 cursos ou carreiras que combinam com meu resultado',
@@ -100,6 +121,7 @@ function navegar() {
     $('#nav').classList.remove('aberto');
     $('#btn-menu').setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
+    if (alvo.id === 'noticias') iniciarNoticias();
 }
 window.addEventListener('hashchange', navegar);
 $('#btn-menu').addEventListener('click', () => {
@@ -247,6 +269,150 @@ $('#lista-plano').addEventListener('change', e => {
     renderPlano();
 });
 renderPlano();
+
+/* ====== Notícias (feed) ====== */
+let noticias = [], filtroNot = 'todas', mostradas = 0, ultimaCarga = 0;
+let noticiasIniciadas = false, carregandoNot = false, observador = null;
+const sentinela = $('#feed-fim');
+const PIXEL = /ebc\.(png|gif)|pixel|track|1x1/i;
+
+const textoLimpo = h => (new DOMParser().parseFromString(h || '', 'text/html').documentElement.textContent || '').trim();
+const linkSeguro = u => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (e) { return ''; } };
+const imgSegura = u => linkSeguro(u).replace(/^http:/, 'https:');
+function dataMs(p) {
+    p = String(p || '').trim().replace(' ', 'T');
+    if (!p) return 0;
+    return Date.parse(/(z|[+-]\d\d:?\d\d)$/i.test(p) ? p : p + 'Z') || 0;
+}
+function haQuanto(ms) {
+    const m = Math.round((Date.now() - ms) / 60000);
+    if (m < 1) return 'agora';
+    if (m < 60) return `há ${m} min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `há ${h} h`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'ontem' : `há ${d} dias`;
+}
+function imagemDoItem(it) {
+    const cand = [it.thumbnail];
+    const e = it.enclosure;
+    if (e && e.link && /image|\.(jpe?g|png|webp|gif)(\?|$)/i.test((e.type || '') + e.link)) cand.push(e.link);
+    const doc = new DOMParser().parseFromString((it.content || '') + (it.description || ''), 'text/html');
+    doc.querySelectorAll('img').forEach(im => {
+        if (Number(im.getAttribute('width') || 100) > 5) cand.push(im.getAttribute('src'));
+    });
+    const ok = cand.map(u => (u && !PIXEL.test(u)) ? imgSegura(u) : '').find(Boolean);
+    return ok || '';
+}
+async function buscarFonte(f) {
+    const r = await fetch(RSS2JSON + encodeURIComponent(f.feed));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d.status !== 'ok' || !Array.isArray(d.items)) throw new Error(d.message || 'resposta inválida');
+    return d.items.map(it => ({
+        titulo: textoLimpo(it.title), link: linkSeguro(it.link), data: dataMs(it.pubDate),
+        img: imagemDoItem(it), fonte: f.nome
+    })).filter(n => n.titulo && n.link);
+}
+async function carregarNoticias(forcar) {
+    if (carregandoNot) return;
+    const cache = ler('next-noticias', null);
+    const cacheOk = cache && Array.isArray(cache.itens) && cache.itens.length;
+    if (!forcar && cacheOk && Date.now() - cache.t < NOTICIAS_TTL) {
+        noticias = cache.itens; ultimaCarga = cache.t;
+        return mostrarNoticias();
+    }
+    carregandoNot = true;
+    $('#btn-atualizar').disabled = true;
+    $('#feed-status').textContent = 'Buscando as notícias mais recentes…';
+    if (!noticias.length) $('#feed').innerHTML = '<div class="sk" aria-hidden="true"></div>'.repeat(5);
+
+    const tarefas = [];
+    Object.entries(NOTICIAS).forEach(([cat, c]) => c.fontes.forEach(f =>
+        tarefas.push(buscarFonte(f).then(itens => itens.map(n => ({ ...n, cat }))))));
+    const res = await Promise.allSettled(tarefas);
+    const falhas = res.filter(r => r.status === 'rejected').length;
+
+    const mapa = new Map();
+    res.filter(r => r.status === 'fulfilled').forEach(r => r.value.forEach(n => {
+        const ja = mapa.get(n.link);
+        if (ja) { if (!ja.cats.includes(n.cat)) ja.cats.push(n.cat); if (!ja.img && n.img) ja.img = n.img; }
+        else mapa.set(n.link, { titulo: n.titulo, link: n.link, data: n.data, img: n.img, fonte: n.fonte, cats: [n.cat] });
+    }));
+    const novas = [...mapa.values()].sort((a, b) => b.data - a.data);
+
+    carregandoNot = false;
+    $('#btn-atualizar').disabled = false;
+    if (novas.length) {
+        noticias = novas; ultimaCarga = Date.now();
+        salvar('next-noticias', { t: ultimaCarga, itens: novas });
+    } else if (!noticias.length && cacheOk) {
+        noticias = cache.itens; ultimaCarga = cache.t;   /* sem internet: mostra as últimas salvas */
+    }
+    mostrarNoticias(falhas, novas.length > 0);
+}
+function mostrarNoticias(falhas = 0, atualizou = true) {
+    const st = $('#feed-status');
+    if (!noticias.length) {
+        st.textContent = '';
+        $('#feed').innerHTML = '<div class="feed-vazio"><p>Não foi possível carregar as notícias agora. Confira sua conexão e tente de novo.</p><p><button class="btn" id="tentar" type="button">Tentar de novo</button></p></div>';
+        return;
+    }
+    const hora = new Date(ultimaCarga).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    st.textContent = `Atualizado às ${hora}` + (!atualizou ? ' (mostrando as últimas notícias salvas, não deu para atualizar agora)' : falhas ? ' · algumas fontes não responderam' : '');
+    renderFeed();
+}
+const filtradas = () => noticias.filter(n => filtroNot === 'todas' || n.cats.includes(filtroNot));
+function cartao(n) {
+    const quando = n.data ? ' · ' + haQuanto(n.data) : '';
+    const img = n.img ? `<img src="${esc(n.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    return `<a class="noticia" href="${esc(n.link)}" target="_blank" rel="noopener noreferrer">
+        <div class="noticia-txt"><span class="noticia-meta">${esc(n.fonte)}${quando}</span>
+            <h3>${esc(n.titulo)}</h3><span class="sr">(abre o site original em nova aba)</span></div>
+        <div class="noticia-img${n.img ? '' : ' sem-img'}" aria-hidden="true">${img}</div></a>`;
+}
+function renderFeed() {
+    mostradas = 0;
+    $('#feed').innerHTML = filtradas().length ? '' : '<p class="feed-vazio">Nenhuma notícia desse assunto por enquanto.</p>';
+    maisNoticias();
+}
+function maisNoticias() {
+    const l = filtradas();
+    const lote = l.slice(mostradas, mostradas + (observador ? NOTICIAS_POR_VEZ : l.length));
+    if (lote.length) $('#feed').insertAdjacentHTML('beforeend', lote.map(cartao).join(''));
+    mostradas += lote.length;
+    if (!observador) return;
+    observador.unobserve(sentinela);
+    if (mostradas < l.length) observador.observe(sentinela);   /* observar de novo dispara a checagem se o fim ainda estiver visível */
+}
+function iniciarNoticias() {
+    if (noticiasIniciadas) {
+        if (Date.now() - ultimaCarga > NOTICIAS_TTL) carregarNoticias(true);
+        return;
+    }
+    noticiasIniciadas = true;
+    $('#chips').innerHTML = [['todas', 'Tudo'], ...Object.entries(NOTICIAS).map(([k, c]) => [k, c.nome])].map(([k, t]) =>
+        `<button class="chip" type="button" data-cat="${k}" aria-pressed="${k === filtroNot}">${esc(t)}</button>`).join('');
+    $('#chips').addEventListener('click', e => {
+        const b = e.target.closest('[data-cat]');
+        if (!b) return;
+        filtroNot = b.dataset.cat;
+        document.querySelectorAll('#chips .chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+        renderFeed();
+        window.scrollTo(0, 0);
+    });
+    $('#btn-atualizar').addEventListener('click', () => carregarNoticias(true));
+    $('#feed').addEventListener('click', e => { if (e.target.id === 'tentar') carregarNoticias(true); });
+    /* imagem que não carrega vira o ícone padrão (o evento error não "sobe", por isso usamos captura) */
+    $('#feed').addEventListener('error', e => {
+        if (e.target.tagName !== 'IMG') return;
+        e.target.parentElement.classList.add('sem-img');
+        e.target.remove();
+    }, true);
+    if ('IntersectionObserver' in window)
+        observador = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) maisNoticias(); }, { rootMargin: '400px' });
+    carregarNoticias(false);
+}
 
 /* ====== Tema claro/escuro (lembra a escolha) ====== */
 const btnTema = $('#btn-tema');
