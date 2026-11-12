@@ -65,7 +65,7 @@ const PLANO = [
 const EQUIPE = [
     { nome: 'Ana Clara de Almeida Teixeira', curto: 'Ana Clara', portfolio: '', rede: '' },
     { nome: 'Arthur Gonçalves Duarte', curto: 'Arthur Gonçalves', portfolio: '', rede: '' },
-    { nome: 'Bernardo Magalhães Orlando', curto: 'Bernardo Magalhães', portfolio: 'https://bernardo150908.github.io/meu-site/', Instagram: 'https://www.instagram.com/_bernardo_orlando/' },
+    { nome: 'Bernardo Magalhães Orlando', curto: 'Bernardo Magalhães', portfolio: 'https://bernardo150908.github.io/meu-site/', rede: 'https://www.instagram.com/_bernardo_orlando/' },
     { nome: 'João Silva Ribeiro', curto: 'João Silva', github: 'https://github.com/joaosr8', linkedin: 'https://www.linkedin.com/in/joaosr8/' },
     { nome: 'Lucas Gomes Schmidt', curto: 'Lucas Gomes', portfolio: '', rede: '' },
     { nome: 'Yasmim Santana de Oliveira', curto: 'Yasmim Santana', portfolio: '', rede: '' }
