@@ -100,7 +100,7 @@ Feed rolável no estilo da tela inicial do Chrome no celular: a pessoa vai desce
 
 1. **Leitura das fontes:** cada fonte publica um feed RSS com as matérias mais recentes. Como o navegador não consegue ler RSS diretamente, o site usa o serviço gratuito [rss2json](https://rss2json.com/), que converte o feed em JSON. Para o **Flow Games**, que é um site WordPress, o navegador lê direto a API pública do site (`wp-json`) e o RSS fica como plano B.
 2. **Montagem do feed:** o `script.js` busca todas as fontes ao mesmo tempo, junta as matérias, remove as repetidas (a mesma matéria pode aparecer em mais de um assunto) e ordena da mais nova para a mais antiga.
-3. **Imagem:** a miniatura vem da própria matéria. Quando não existe ou não carrega, aparece um ícone no lugar.
+3. **Imagem:** a miniatura vem da própria matéria. Quando não existe ou não carrega, aparece a **imagem padrão da fonte** (por exemplo, `flowgames.png` para o Flow Games) e, se a fonte não tiver uma, um ícone.
 4. **Rolagem infinita:** aparecem 10 matérias por vez, e mais 10 são mostradas conforme a pessoa desce (`IntersectionObserver`).
 5. **Filtros:** os botões **Tudo**, **Tecnologia**, **Jogos**, **Economia** e **Saúde** ficam fixos no topo e filtram o feed na hora.
 6. **Atualização:** o feed só é buscado quando a pessoa abre a aba. As notícias ficam salvas no navegador (`localStorage`) por **15 minutos**, para evitar pedidos repetidos, e se a pessoa voltar depois desse prazo o feed atualiza sozinho. O botão **Atualizar** busca de novo quando ela quiser.
@@ -173,6 +173,7 @@ Ao final, o site sugere próximos passos de pesquisa (ler grades curriculares, c
 ├── index.html   # estrutura das seções, menu e modal
 ├── style.css    # estilos, tema claro/escuro e responsividade
 ├── script.js    # dados do site, navegação, modal, teste, plano, tema e notícias
+├── flowgames.png # imagem padrão das notícias do Flow Games (logo)
 └── README.md
 ```
 
@@ -201,7 +202,7 @@ Quase tudo se altera no topo do `script.js`:
 |---|---|
 | Temas de cursos e seus links | `CURSOS` (campo `extra` para links específicos de um tema) e `PLATAFORMAS` |
 | Canais e trailers | `CANAIS` (campo `video` com o ID do vídeo do YouTube) |
-| Fontes e assuntos das notícias | `NOTICIAS` (cada assunto tem uma lista de fontes no formato `{ nome, feed }`, onde `feed` é o endereço RSS; sites WordPress podem ter também `wp`, o endereço da API `wp-json`) |
+| Fontes e assuntos das notícias | `NOTICIAS` (cada assunto tem uma lista de fontes no formato `{ nome, feed }`, onde `feed` é o endereço RSS; sites WordPress podem ter também `wp`, o endereço da API `wp-json`, e qualquer fonte pode ter `logo`, o nome de uma imagem da pasta do projeto usada quando a matéria não tem foto) |
 | Tempo de cache e quantidade de matérias por rolagem | `NOTICIAS_TTL` e `NOTICIAS_POR_VEZ` |
 | Itens do plano | `PLANO` |
 | Integrantes da equipe e links | `EQUIPE` (`github`, `linkedin`, `portfolio`, `rede`; o que ficar vazio não aparece) |
