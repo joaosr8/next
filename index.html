@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXT+ reúne cursos gratuitos, teste vocacional, canais e vagas para quem está terminando o ensino médio.">
+    <title>NEXT+ | Prepare-se para sua próxima jornada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+    <header>
+        <a href="#inicio" class="logo">NEXT<span>+</span></a>
+        <button id="btn-menu" class="btn-tema menu-toggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+        <nav id="nav" aria-label="Principal">
+            <ul>
+                <li><a href="#inicio">Início</a></li>
+                <li><a href="#teste">Teste vocacional</a></li>
+                <li><a href="#cursos">Cursos</a></li>
+                <li><a href="#recomendacoes">Canais</a></li>
+                <li><a href="#vagas">Vagas</a></li>
+                <li><a href="#plano">Meu plano</a></li>
+                <li><a href="#sobre">Sobre nós</a></li>
+            </ul>
+        </nav>
+        <div class="acoes">
+            <button id="btn-tema" class="btn-tema" aria-label="Alternar tema claro e escuro">🌙</button>
+            <button id="btn-login" class="btn">Área do Aluno</button>
+        </div>
+    </header>
+
+    <!-- Modal único, reaproveitado por todas as janelas -->
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+        <div class="modal-content">
+            <button class="close-btn" aria-label="Fechar">&times;</button>
+            <h2 id="modal-titulo"></h2>
+            <div id="modal-corpo"></div>
+        </div>
+    </div>
+
+    <main id="conteudo">
+        <section id="inicio" class="secao ativa">
+            <div class="hero">
+                <h1>Terminar o ensino médio é o começo, não o fim.</h1>
+                <p>O NEXT+ junta em um só lugar o que você precisa para decidir o que vem depois: teste vocacional, cursos gratuitos, canais para aprender e caminhos para a primeira vaga.</p>
+                <div class="hero-btns">
+                    <a href="#teste" class="btn">Fazer o teste vocacional</a>
+                    <a href="#plano" class="btn btn-sec">Montar meu plano</a>
+                </div>
+            </div>
+            <ol class="passos">
+                <li><h3>Descubra</h3><p>Responda 20 perguntas e veja quais áreas combinam com você.</p></li>
+                <li><h3>Aprenda</h3><p>Comece cursos gratuitos de instituições reconhecidas.</p></li>
+                <li><h3>Conquiste</h3><p>Monte seu perfil e procure sua primeira oportunidade.</p></li>
+            </ol>
+        </section>
+
+        <section id="teste" class="secao">
+            <h1>Teste vocacional</h1>
+            <p class="lead">Uma ajuda simples e um ponto de partida para pensar nas áreas. Ele não decide nada por você: depois, pesquise mais.</p>
+            <div id="quiz" class="painel"></div>
+        </section>
+
+        <section id="cursos" class="secao">
+            <h1>Cursos gratuitos</h1>
+            <p class="lead">Escolha um tema e vá direto para as plataformas.</p>
+            <div id="grid-cursos" class="grid"></div>
+            <h2 class="sub">Plataformas</h2>
+            <div class="grid">
+                <div class="card estatico">
+                    <h3>Santander Open Academy</h3>
+                    <p>Cursos online gratuitos de várias áreas.</p>
+                    <a href="https://www.santanderopenacademy.com/pt_br/sites/courses.html" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+                <div class="card estatico">
+                    <h3>Fundação Bradesco (EV.G)</h3>
+                    <p>Catálogo de cursos gratuitos com certificado.</p>
+                    <a href="https://www.ev.org.br/cursos" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+                <div class="card estatico">
+                    <h3>FGV Cursos Gratuitos</h3>
+                    <p>Cursos online gratuitos da Fundação Getulio Vargas.</p>
+                    <a href="https://cursosgratuitos.fgv.br/" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+                <div class="card estatico">
+                    <h3>Aprenda Mais (MEC)</h3>
+                    <p>Plataforma de cursos gratuitos do Ministério da Educação.</p>
+                    <a href="https://aprendamais.mec.gov.br/" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+                <div class="card estatico">
+                    <h3>Mackenzie Cursos Gratuitos</h3>
+                    <p>Cursos gratuitos oferecidos pelo Mackenzie.</p>
+                    <a href="https://www.mackenzie.br/cursosgratuitos" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+                <div class="card estatico">
+                    <h3>Google for Education</h3>
+                    <p>Certificações do Google para educação.</p>
+                    <a href="https://edu.google.com/intl/ALL_br/learning-center/certifications/" target="_blank" rel="noopener noreferrer">Ver cursos</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="recomendacoes" class="secao">
+            <h1>Canais para aprender</h1>
+            <p class="lead">Nossa curadoria do YouTube.</p>
+            <div id="grid-canais" class="lista-canais"></div>
+        </section>
+
+        <section id="vagas" class="secao">
+            <h1>Oportunidades de trabalho</h1>
+            <p class="lead">Comece a busca e construa sua rede de contatos.</p>
+            <div class="grid">
+                <div class="card estatico">
+                    <h3>LinkedIn</h3>
+                    <p>Crie seu perfil profissional e conecte-se com recrutadores.</p>
+                    <a href="https://br.linkedin.com/" target="_blank" rel="noopener noreferrer">Abrir LinkedIn</a>
+                </div>
+                <div class="card estatico">
+                    <h3>Google Vagas</h3>
+                    <p>Busque vagas de Jovem Aprendiz e estágio perto de você pela plataforma do Google.</p>
+                    <a href="https://jobs.google.com/" target="_blank" rel="noopener noreferrer">Abrir Google Vagas</a>
+                </div>
+                <div class="card estatico">
+                    <h3>InfoJobs</h3>
+                    <p>Busque vagas de Jovem Aprendiz e estágio perto de você com a InfoJobs.</p>
+                    <a href="https://www.infojobs.com.br/" target="_blank" rel="noopener noreferrer">Abrir InfoJobs</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="plano" class="secao">
+            <h1>Meu plano</h1>
+            <p class="lead">Marque o que você já fez. Seu progresso fica salvo neste navegador.</p>
+            <div class="painel">
+                <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="barra-prog"></i></div>
+                <p id="prog-texto" class="prog-texto"></p>
+                <ul id="lista-plano" class="checklist"></ul>
+            </div>
+        </section>
+
+        <section id="sobre" class="secao">
+            <h1>Sobre nós</h1>
+            <p class="lead">3º Informática, Sala 01 · E.E.T.I. Professor Fontes · INFOTEC 2026</p>
+            <h2 class="sub">Conheça a equipe</h2>
+            <div id="grid-equipe" class="grid"></div>
+            <h2 class="sub">Como surgiu a ideia</h2>
+            <div class="painel origem">
+                <p>O NEXT+ nasceu da nossa convivência. Ao longo do curso, dividimos aulas, projetos e muitas conversas, e neste último ano do ensino médio percebemos que quase todo mundo da turma enfrentava o mesmo problema: não saber por onde começar a decidir o que fazer depois da formatura. As informações existiam, mas estavam espalhadas. Por isso criamos uma plataforma feita por estudantes, para estudantes, que reúne em um só lugar o que a gente mesmo gostaria de ter encontrado.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>NEXT+ · Prepare-se para sua próxima jornada · INFOTEC 2026</footer>
+    <script src="script.js"></script>
+</body>
+</html>
