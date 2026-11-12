@@ -26,14 +26,17 @@ const CANAIS = [
     { nome: 'Canal recomendado pela equipe', desc: 'Mais uma indicação da nossa curadoria.', url: 'https://www.youtube.com/channel/UCafFexaRoRylOKdzGBU6Pgg', video: 'c6kJFWd8R30' }
 ];
 
-/* Notícias: cada assunto tem as suas fontes (feeds RSS). Para incluir uma fonte, basta adicionar { nome, feed } na lista */
+/* Notícias: cada assunto tem as suas fontes. Para incluir uma, adicione { nome, feed } (endereço RSS) na lista.
+   Sites WordPress sem RSS bom podem usar também { wp } (API wp-json), que o navegador lê direto; o RSS vira plano B. */
 const NOTICIAS = {
     tec: { nome: 'Tecnologia', fontes: [
         { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/feed' },
-        { nome: 'g1 Tecnologia', feed: 'https://g1.globo.com/rss/g1/tecnologia/' }
+        { nome: 'g1 Tecnologia', feed: 'https://g1.globo.com/rss/g1/tecnologia/' },
+        { nome: 'Adrenaline', feed: 'https://adrenaline.com.br/rss' }
     ] },
     jog: { nome: 'Jogos', fontes: [
-        { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/tema/jogos/feed' }
+        { nome: 'Tecnoblog', feed: 'https://tecnoblog.net/tema/jogos/feed' },
+        { nome: 'Flow Games', wp: 'https://flowgames.gg/wp-json/wp/v2/posts?per_page=20&_embed=wp:featuredmedia&_fields=link,title,date_gmt,_links,_embedded', feed: 'https://flowgames.gg/feed/' }
     ] },
     eco: { nome: 'Economia', fontes: [
         { nome: 'g1 Economia', feed: 'https://g1.globo.com/rss/g1/economia/' },
@@ -314,6 +317,27 @@ async function buscarFonte(f) {
         img: imagemDoItem(it), fonte: f.nome
     })).filter(n => n.titulo && n.link);
 }
+/* Sites WordPress têm uma API pública (wp-json) que o navegador lê direto, sem intermediário */
+async function buscarWP(f) {
+    const r = await fetch(f.wp);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (!Array.isArray(d)) throw new Error('resposta inválida');
+    return d.map(p => {
+        const m = ((p._embedded || {})['wp:featuredmedia'] || [])[0] || {};
+        const sz = (m.media_details && m.media_details.sizes) || {};
+        const capa = sz.medium_large || sz.medium || sz.large || m;
+        return {
+            titulo: textoLimpo(p.title && p.title.rendered), link: linkSeguro(p.link), data: dataMs(p.date_gmt),
+            img: imgSegura(capa.source_url || ''), fonte: f.nome
+        };
+    }).filter(n => n.titulo && n.link);
+}
+async function buscar(f) {
+    if (!f.wp) return buscarFonte(f);
+    try { return await buscarWP(f); }
+    catch (e) { console.warn('API do WordPress falhou em ' + f.nome + ', tentando o RSS:', e); if (!f.feed) throw e; return buscarFonte(f); }
+}
 async function carregarNoticias(forcar) {
     if (carregandoNot) return;
     const cache = ler('next-noticias', null);
@@ -327,11 +351,14 @@ async function carregarNoticias(forcar) {
     $('#feed-status').textContent = 'Buscando as notícias mais recentes…';
     if (!noticias.length) $('#feed').innerHTML = '<div class="sk" aria-hidden="true"></div>'.repeat(5);
 
-    const tarefas = [];
-    Object.entries(NOTICIAS).forEach(([cat, c]) => c.fontes.forEach(f =>
-        tarefas.push(buscarFonte(f).then(itens => itens.map(n => ({ ...n, cat }))))));
-    const res = await Promise.allSettled(tarefas);
-    const falhas = res.filter(r => r.status === 'rejected').length;
+    const fontes = [];
+    Object.entries(NOTICIAS).forEach(([cat, c]) => c.fontes.forEach(f => fontes.push({ cat, f })));
+    const res = await Promise.allSettled(fontes.map(({ cat, f }) => buscar(f).then(itens => itens.map(n => ({ ...n, cat })))));
+    const falhas = [...new Set(res.map((r, i) => {
+        if (r.status !== 'rejected') return '';
+        console.warn('Fonte sem resposta: ' + fontes[i].f.nome, r.reason);
+        return fontes[i].f.nome;
+    }).filter(Boolean))];
 
     const mapa = new Map();
     res.filter(r => r.status === 'fulfilled').forEach(r => r.value.forEach(n => {
@@ -351,7 +378,7 @@ async function carregarNoticias(forcar) {
     }
     mostrarNoticias(falhas, novas.length > 0);
 }
-function mostrarNoticias(falhas = 0, atualizou = true) {
+function mostrarNoticias(falhas = [], atualizou = true) {
     const st = $('#feed-status');
     if (!noticias.length) {
         st.textContent = '';
@@ -359,7 +386,7 @@ function mostrarNoticias(falhas = 0, atualizou = true) {
         return;
     }
     const hora = new Date(ultimaCarga).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    st.textContent = `Atualizado às ${hora}` + (!atualizou ? ' (mostrando as últimas notícias salvas, não deu para atualizar agora)' : falhas ? ' · algumas fontes não responderam' : '');
+    st.textContent = `Atualizado às ${hora}` + (!atualizou ? ' (mostrando as últimas notícias salvas, não deu para atualizar agora)' : falhas.length ? ' · não responderam: ' + falhas.join(', ') : '');
     renderFeed();
 }
 const filtradas = () => noticias.filter(n => filtroNot === 'todas' || n.cats.includes(filtroNot));
